@@ -1,6 +1,6 @@
 import React from 'react'
-import { Button } from '../button'
 import { Link } from 'react-router-dom'
+import { Button } from '../ui/button'
 
 function Hero() {
     return (
@@ -13,11 +13,11 @@ function Hero() {
                 Cypress is your go-to tool for reporting and tracking local issues in Toronto. Submit a report, stay updated, and help improve your community!
             </p>
             <h3 className='font-medium text-[23px] text-center'>
-                Click "Submit Report" to get started.
+                Click "Create a Report" to get started.
             </h3>
 
             <Link to={'/create-report'}>
-                <Button> Create a Report </Button>
+                <Button> Create Report </Button>
             </Link>
         </div>
     )

@@ -121,7 +121,7 @@ function CreateReport() {
                 userEmail: user?.email,
                 userId: user?.id,
                 createdAt: new Date(),
-                status: 'pending'
+                status: 'In-Progess'
             };
 
             await setDoc(doc(db, "Reports", docId), reportData);
@@ -176,7 +176,7 @@ function CreateReport() {
     }; */
 
     return (
-        <div className='sm:px-10 md:px-32 lf:px-56 xl:px-10 px-5 mt-10'>
+        <div className='px-10 mt-10'>
             <h2 className='font-bold text-3xl'>Tell us about the problem</h2>
             <p className='mt-3 text-gray-500 text-xl'>Give us some details about the problem that will help us resolve it</p>
 
@@ -201,19 +201,19 @@ function CreateReport() {
                         <SelectContent>
                             <SelectGroup>
                                 <SelectLabel>Categories</SelectLabel>
-                                <SelectItem value="Road & Traffic">Road & Traffic</SelectItem>
-                                <SelectItem value="Public Transportation">Public Transportation</SelectItem>
-                                <SelectItem value="Waste & Cleanliness">Waste & Cleanliness</SelectItem>
-                                <SelectItem value="Water & Sewage">Water & Sewage</SelectItem>
-                                <SelectItem value="Parks & Public Spaces">Parks & Public Spaces</SelectItem>
-                                <SelectItem value="Streetlights & Electrical">Streetlights & Electrical</SelectItem>
-                                <SelectItem value="Public Safety & Security">Public Safety & Security</SelectItem>
-                                <SelectItem value="Noise & Nuisance">Noise & Nuisance</SelectItem>
-                                <SelectItem value="Construction & Infrastructure">Construction & Infrastructure</SelectItem>
-                                <SelectItem value="Private Property & Bylaw Violations">Private Property & Bylaw Violations</SelectItem>
-                                <SelectItem value="Wildlife & Animal Control">Wildlife & Animal Control</SelectItem>
-                                <SelectItem value="Accessibility Issues">Accessibility Issues</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
+                                <SelectItem value="🛣️ Road & Traffic">Road & Traffic</SelectItem>
+                                <SelectItem value="🚌 Public Transportation">Public Transportation</SelectItem>
+                                <SelectItem value="🗑️ Waste & Cleanliness">Waste & Cleanliness</SelectItem>
+                                <SelectItem value="💧 Water & Sewage">Water & Sewage</SelectItem>
+                                <SelectItem value="🌳 Parks & Public Spaces">Parks & Public Spaces</SelectItem>
+                                <SelectItem value="💡 Streetlights & Electrical">Streetlights & Electrical</SelectItem>
+                                <SelectItem value="⚠️ Public Safety & Security">Public Safety & Security</SelectItem>
+                                <SelectItem value="🔊 Noise & Nuisance">Noise & Nuisance</SelectItem>
+                                <SelectItem value="🚧 Construction & Infrastructure">Construction & Infrastructure</SelectItem>
+                                <SelectItem value="🏠 Private Property & Bylaw Violations">Private Property & Bylaw Violations</SelectItem>
+                                <SelectItem value="🐾 Wildlife & Animal Control">Wildlife & Animal Control</SelectItem>
+                                <SelectItem value="♿ Accessibility Issues">Accessibility Issues</SelectItem>
+                                <SelectItem value="❓ Other">Other</SelectItem>
                             </SelectGroup>
                         </SelectContent>
                     </Select>
@@ -307,7 +307,7 @@ function CreateReport() {
                                 onClick={login}
                                 className='w-full mt-5 flex gap-4 items-center'>
                                 <FcGoogle className='h-7 w-7' />
-                                Sign In With Google
+                                Sign in with Google
                             </Button>
                         </DialogDescription>
                     </DialogHeader>

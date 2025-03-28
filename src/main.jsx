@@ -4,10 +4,11 @@ import './index.css'
 import App from './App.jsx'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import CreateReport from './create-report'
-import Header from './components/ui/custom/Header'
 import { Toaster } from './components/ui/sonner'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ViewReport from './view-report/[reportId]'
+import Header from './components/custom/Header'
+import MyReports from './my-reports'
 
 const router = createBrowserRouter([
   {
@@ -21,6 +22,10 @@ const router = createBrowserRouter([
   {
     path:'/view-report/:reportId',
     element:<ViewReport/>
+  },
+  {
+    path:'/my-reports',
+    element:<MyReports/>
   }
 ])
 

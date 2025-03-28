@@ -7,6 +7,7 @@ import CreateReport from './create-report'
 import Header from './components/ui/custom/Header'
 import { Toaster } from './components/ui/sonner'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import ViewReport from './view-report/[reportId]'
 
 const router = createBrowserRouter([
   {
@@ -16,6 +17,10 @@ const router = createBrowserRouter([
   {
     path: '/create-report',
     element: <CreateReport />
+  },
+  {
+    path:'/view-report/:reportId',
+    element:<ViewReport/>
   }
 ])
 

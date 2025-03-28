@@ -21,15 +21,19 @@ import axios from 'axios';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/service/firebaseConfig';
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { useNavigate } from 'react-router-dom';
 
 
 function CreateReport() {
     const [place, setPlace] = useState();
 
     const [formData, setFormData] = useState([]);
+
     const [openDialog, setOpenDialog] = useState(false);
 
     const [loading, setLoading] = useState(false);
+
+    const navigate=useNavigate();
 
     const handleInputChange = (name, value) => {
         setFormData({
@@ -94,6 +98,8 @@ function CreateReport() {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
 
+            const docId = Date.now().toString();
+
             /* let imageUrl = null;
             if (formData.image?.file) {
                 const storageRef = ref(storage, `reports/${user.id}/${formData.image.file.name}`);
@@ -102,6 +108,7 @@ function CreateReport() {
             } */
 
             const reportData={
+                reportId: docId,
                 title: formData.title,
                 category: formData.category,
                 description: formData.description,
@@ -117,17 +124,19 @@ function CreateReport() {
                 status: 'pending'
             };
 
-            const docId = Date.now().toString();
             await setDoc(doc(db, "Reports", docId), reportData);
 
             toast.success("Report submitted successfully!");
             console.log("Report ID:", docId);
+            setLoading(false);
+            navigate('/view-report/'+docId);
 
         } catch (error) {
             console.error("Error saving report:", error);
             toast.error("Failed to submit report. Please try again.");
         } finally {
             setLoading(false);
+
         }
     };
 

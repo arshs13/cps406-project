@@ -24,20 +24,28 @@ function UserReportCardItem({ report }) {
     const { date: formattedDate, time: formattedTime } = formatDateTime(report?.createdAt);
 
     return (
-        <Link to={'/view-report/'+report?.reportId}>
-            <div className='hover:scale-105 transition-all'>
-                <img src='/vite.svg'
-                    className='object-cover rounded-xl' />
+        <Link to={'/view-report/'+report?.reportId} className="block group">
+            <div className='hover:bg-gray-50 hover:scale-105 transition-all border rounded-lg p-4 h-full flex flex-col justify-between'>
                 <div>
-                    <h2 className='font-bold text-lg'>{report?.title}</h2>
-                    <h2>{formattedDate} at {formattedTime}</h2>
+                    <div className="flex justify-between items-start mb-2">
+                        <h2 className='font-semibold text-gray-900 text-lg truncate'>{report?.title}</h2>
+                    </div>
+                    <p className='text-sm text-gray-500 mb-4'>
+                        {formattedDate} • {formattedTime}
+                    </p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium 
-                    ${report?.status === 'In-Progess' ? 'bg-yellow-100 text-yellow-800' :
-                        report?.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                
+                <div className="flex justify-between items-center">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize 
+                        ${report?.status === 'In-Progress' ? 'bg-yellow-100 text-yellow-800' :
+                            report?.status === 'Resolved' ? 'bg-green-100 text-green-800' :
                             'bg-blue-100 text-blue-800'}`}>
-                    {report?.status}
-                </span>
+                        {report?.status}
+                    </span>
+                    <span className="text-sm text-gray-500 group-hover:text-blue-600 transition-colors">
+                        View details →
+                    </span>
+                </div>
             </div>
         </Link>
     )

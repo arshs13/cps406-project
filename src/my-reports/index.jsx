@@ -38,7 +38,7 @@ function MyReports() {
         <div className='min-h-screen flex flex-col'>
             <div className='flex-1 px-10 pt-10'>
                 <h2 className='font-bold text-3xl'>My Reports</h2>
-                <p className='mt-3 text-gray-500 text-xl'>Click each problem for more information3</p>
+                <p className='mt-3 text-gray-500 text-xl'>Click each problem for more information</p>
 
                 <div className='grid grid-cols-2 mt-10 md:grid-cols-3 gap-5'>
                     {userReports?.length > 0 ? userReports.map((report, index) => (

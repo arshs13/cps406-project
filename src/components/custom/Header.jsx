@@ -21,7 +21,7 @@ import { toast } from 'sonner';
 
 function Header() {
 
-  const [user, setUser] = useState(()=>{
+  const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
@@ -30,7 +30,7 @@ function Header() {
   useEffect(() => {
     const handleUserUpdate = () => {
       const storedUser = localStorage.getItem('user');
-      setUser(storedUser ? JSON.parse(storedUser): null);
+      setUser(storedUser ? JSON.parse(storedUser) : null);
     };
 
     window.addEventListener('user-updated', handleUserUpdate);
@@ -103,19 +103,26 @@ function Header() {
                   alt={`${user?.name}'s profile`}
                 />
               </PopoverTrigger>
-              <PopoverContent className="w-40 p-1"> {/* Reduced overall popover padding */}
-                <a href='/' className="block w-full">
-                  <div
-                    className="cursor-pointer px-3 py-2 text-md font-medium hover:bg-gray-100 rounded-md transition-colors"
-                    onClick={() => {
-                      googleLogout();
-                      localStorage.clear();
-                      window.location.href = '/';
-                    }}
-                  >
-                    Log Out
+              <PopoverContent className="w-48 p-1.5">
+                <div className='flex flex-col'>
+                  <div className='px-3 py-2 border-b'>
+                    <p className='text-sm font-medium text-gray-700 truncate'>{user?.name}</p>
+                    <p className='text-xs text-gray-500 truncate'>{user?.email}</p>
                   </div>
-                </a>
+
+                  <a href='/' className="block w-full">
+                    <div
+                      className="cursor-pointer px-3 py-2 text-sm font-medium hover:bg-gray-100 rounded-md transition-colors"
+                      onClick={() => {
+                        googleLogout();
+                        localStorage.clear();
+                        window.location.href = '/';
+                      }}
+                    >
+                      Log Out
+                    </div>
+                  </a>
+                </div>
               </PopoverContent>
             </Popover>
           </div>

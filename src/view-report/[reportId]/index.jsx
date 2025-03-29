@@ -1,13 +1,15 @@
+import { Button } from '@/components/ui/button';
 import { db } from '@/service/firebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner';
 
 function ViewReport() {
-
+    const [isSubscribed, setIsSubscribed] = useState(false);
     const { reportId } = useParams();
     const [report, setReport] = useState([]);
+    const user = JSON.parse(localStorage.getItem('user'));
 
     const formatDateTime = (timestamp) => {
         if (!timestamp?.seconds) return 'N/A';
@@ -30,8 +32,21 @@ function ViewReport() {
     const { date: formattedDate, time: formattedTime } = formatDateTime(report?.createdAt);
 
     useEffect(() => {
-        reportId && GetReportData();
-    }, [reportId])
+        if (!reportId) return;
+
+        const reportRef = doc(db, 'Reports', reportId);
+        const unsubscribe = onSnapshot(reportRef, (doc) => {
+            if (doc.exists()) {
+                const reportData = doc.data();
+                setReport(reportData);
+                setIsSubscribed(reportData.subscribers?.includes(user?.id) ?? false);
+            } else {
+                toast.error('No Report Found!');
+            }
+        });
+
+        return () => unsubscribe();
+    }, [reportId, user?.id]);
 
     /**
      * Used to get report information from Firebase
@@ -48,6 +63,29 @@ function ViewReport() {
         }
     }
 
+    const handleSubscribe = async (subscribe) => {
+        if (!user) {
+            toast.error('Please sign in to manage notifications');
+            return;
+        }
+
+        try {
+            const reportRef = doc(db, "Reports", reportId);
+            await updateDoc(reportRef, {
+                subscribers: isSubscribed
+                ? arrayRemove(user.id)
+                : arrayUnion(user.id)
+            });
+
+            setIsSubscribed(!isSubscribed);
+        } catch (error) {
+            console.error("Subscription error:", error);
+            toast.error("Failed to update subscription");
+        }
+    };
+
+    if (!report) return <div className='min-h-screen flex items-center justify-center'>Loading...</div>;
+
     return (
         <div className="min-h-screen flex flex-col">
             <div className='max-w-4xl mx-auto p-6 space-y-8 flex-1 w-full'>
@@ -58,9 +96,11 @@ function ViewReport() {
                             <h1 className="text-4xl font-bold text-gray-900">{report?.title}</h1>
                             <div className="mt-2 flex items-center gap-3">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium 
-                                ${report?.status === 'In-Progress' ? 'bg-yellow-100 text-yellow-800' :
-                                        report?.status === 'Resolved' ? 'bg-green-100 text-green-800' :
-                                            'bg-blue-100 text-blue-800'}`}>
+                                ${report?.status === 'Pending' ? 'bg-gray-100 text-gray-800' :
+                                        report?.status === 'In-Progress' ? 'bg-yellow-100 text-yellow-800' :
+                                            report?.status === 'Resolved' ? 'bg-green-100 text-green-800' :
+                                                report?.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                    'bg-blue-100 text-blue-800'}`}>
                                     {report?.status}
                                 </span>
                                 <span className="text-sm text-gray-500">
@@ -121,9 +161,23 @@ function ViewReport() {
                 {/* Notifications */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border">
                     <h2 className="text-xl font-semibold mb-4">Notifications</h2>
-                    <p className={`text-lg ${report?.notifications ? 'text-green-600' : 'text-gray-500'}`}>
-                        {report?.notifications ? 'Enabled' : 'Disabled'}
-                    </p>
+                    <div className='flex items-center justify-between'>
+                        <p className={`text-lg ${isSubscribed ? 'text-green-600' : 'text-gray-500'}`}>
+                            {isSubscribed ? 'Subscribed' : 'Not Subscribed'}
+                        </p>
+                        <Button
+                            variant='outline'
+                            onClick={handleSubscribe}
+                            disabled={!user}
+                        >
+                            {isSubscribed ? 'Unsubscribe' : 'Subscribe'}
+                        </Button>
+                    </div>
+                    {!user && (
+                        <p className='text-sm text-gray-500 mt-2'>
+                            Sign in to receive status updates
+                        </p>
+                    )}
                 </div>
             </div>
 

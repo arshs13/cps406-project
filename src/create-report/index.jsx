@@ -121,7 +121,12 @@ function CreateReport() {
                 userEmail: user?.email,
                 userId: user?.id,
                 createdAt: new Date(),
-                status: 'In-Progress'
+                status: 'Pending',
+                subscribers: formData.notifications ? [user?.id] : [],
+                statusHistory: [{
+                    status: 'Pending',
+                    timestamp: new Date()
+                }]
             };
 
             await setDoc(doc(db, "Reports", docId), reportData);

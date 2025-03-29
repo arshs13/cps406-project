@@ -9,6 +9,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import ViewReport from './view-report/[reportId]'
 import Header from './components/custom/Header'
 import MyReports from './my-reports'
+import ReportListener from './components/custom/ReportListener'
 
 const router = createBrowserRouter([
   {
@@ -33,7 +34,8 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID}>
       <Header />
-      <Toaster />
+      <Toaster richColors position="top-right" />
+      <ReportListener />
       <RouterProvider router={router} />
     </GoogleOAuthProvider>
   </StrictMode>,

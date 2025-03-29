@@ -21,12 +21,26 @@ import { toast } from 'sonner';
 
 function Header() {
 
-  const user = JSON.parse(localStorage.getItem('user'));
+  const [user, setUser] = useState(()=>{
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
-    console.log(user);
-  }, [])
+    const handleUserUpdate = () => {
+      const storedUser = localStorage.getItem('user');
+      setUser(storedUser ? JSON.parse(storedUser): null);
+    };
+
+    window.addEventListener('user-updated', handleUserUpdate);
+    window.addEventListener('storage', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('user-updated', handleUserUpdate);
+      window.removeEventListener('storage', handleUserUpdate);
+    };
+  }, []);
 
   const login = useGoogleLogin({
     onSuccess: (codeResp) => GetUserProfile(codeResp),
@@ -47,19 +61,19 @@ function Header() {
       setOpenDialog(false);
       window.location.reload();
     })
-    .catch((error) => {
-      console.error('Profile fetch error:', error);
-      toast.error('Failed to load user profile');
-    });
+      .catch((error) => {
+        console.error('Profile fetch error:', error);
+        toast.error('Failed to load user profile');
+      });
   };
 
   return (
-    <div className='p-3 shadow-sm flex justify-between items-center px-4'>
+    <div className='p-3 shadow-sm flex justify-between items-center px-5'>
       <a href='/'>
-        <Button 
-        variant="ghost" 
-        className="p-0 hover:bg-transparent cursor-pointer"
-        aria-label='Home'
+        <Button
+          variant="ghost"
+          className="p-0 hover:bg-transparent cursor-pointer"
+          aria-label='Home'
         >
           <div className="w-[160px] md:w-[180px] h-auto aspect-[1750/398]"> {/* 4.44:1 ratio */}
             <img
@@ -83,31 +97,38 @@ function Header() {
             </a>
             <Popover>
               <PopoverTrigger aria-label='User profile menu'>
-                <img 
-                src={user?.picture} 
-                className='h-[35px] w-[35px] rounded-full cursor-pointer'
-                alt={`${user?.name}'s profile`}
+                <img
+                  src={user?.picture}
+                  className='h-[35px] w-[35px] rounded-full cursor-pointer'
+                  alt={`${user?.name}'s profile`}
                 />
               </PopoverTrigger>
-              <PopoverContent>
-                <h2 className='cursor-pointer' onClick={() => {
-                  googleLogout();
-                  localStorage.clear();
-                  window.location.reload();
-                }}>Log Out</h2>
+              <PopoverContent className="w-40 p-1"> {/* Reduced overall popover padding */}
+                <a href='/' className="block w-full">
+                  <div
+                    className="cursor-pointer px-3 py-2 text-md font-medium hover:bg-gray-100 rounded-md transition-colors"
+                    onClick={() => {
+                      googleLogout();
+                      localStorage.clear();
+                      window.location.href = '/';
+                    }}
+                  >
+                    Log Out
+                  </div>
+                </a>
               </PopoverContent>
             </Popover>
           </div>
           :
           <Button
-          onClick={() => setOpenDialog(true)}
-          aria-label='Sign in'
+            onClick={() => setOpenDialog(true)}
+            aria-label='Sign in'
           >
             Sign In
           </Button>
         }
       </div>
-      <Dialog open={openDialog}>
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogDescription>

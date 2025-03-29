@@ -33,7 +33,7 @@ function CreateReport() {
 
     const [loading, setLoading] = useState(false);
 
-    const navigate=useNavigate();
+    const navigate = useNavigate();
 
     const handleInputChange = (name, value) => {
         setFormData({
@@ -46,13 +46,13 @@ function CreateReport() {
         console.log(formData);
     }, [formData]);
 
-/*     useEffect(() => {
-        return () => {
-            if (formData.image?.preview) {
-                URL.revokeObjectURL(formData.image.preview);
-            }
-        };
-    }, [formData.image]); */
+    /*     useEffect(() => {
+            return () => {
+                if (formData.image?.preview) {
+                    URL.revokeObjectURL(formData.image.preview);
+                }
+            };
+        }, [formData.image]); */
 
     const login = useGoogleLogin({
         onSuccess: (codeResp) => GetUserProfile(codeResp),
@@ -107,7 +107,7 @@ function CreateReport() {
                 imageUrl = await getDownloadURL(snapshot.ref);
             } */
 
-            const reportData={
+            const reportData = {
                 reportId: docId,
                 title: formData.title,
                 category: formData.category,
@@ -121,7 +121,7 @@ function CreateReport() {
                 userEmail: user?.email,
                 userId: user?.id,
                 createdAt: new Date(),
-                status: 'In-Progess'
+                status: 'In-Progress'
             };
 
             await setDoc(doc(db, "Reports", docId), reportData);
@@ -129,7 +129,7 @@ function CreateReport() {
             toast.success("Report submitted successfully!");
             console.log("Report ID:", docId);
             setLoading(false);
-            navigate('/view-report/'+docId);
+            navigate('/view-report/' + docId);
 
         } catch (error) {
             console.error("Error saving report:", error);
@@ -147,12 +147,16 @@ function CreateReport() {
                 Accept: 'Application/json'
             }
         }).then((resp) => {
-            console.log(resp);
             localStorage.setItem('user', JSON.stringify(resp.data));
+            window.dispatchEvent(new Event('user-updated'));
             setOpenDialog(false);
             OnGenerateReport();
         })
-    }
+            .catch((error) => {
+                console.error('Profile fetch error:', error);
+                toast.error('Failed to load user profile');
+            });
+    };
 
     /* const validateImageFile = (file) => {
         if (!file) return null;
@@ -176,68 +180,69 @@ function CreateReport() {
     }; */
 
     return (
-        <div className='px-10 mt-10'>
-            <h2 className='font-bold text-3xl'>Tell us about the problem</h2>
-            <p className='mt-3 text-gray-500 text-xl'>Give us some details about the problem that will help us resolve it</p>
+        <div className='min-h-screen flex flex-col pt-10'>
+            <div className='flex-1 px-10'>
+                <h2 className='font-bold text-3xl'>Tell us about the problem</h2>
+                <p className='mt-3 text-gray-500 text-xl'>Give us some details about the problem that will help us resolve it</p>
 
-            <div className='mt-8 flex flex-col gap-6'>
+                <div className='mt-8 flex flex-col gap-6'>
 
-                <div>
-                    <h2 className='text-xl my-3 font-medium'>Problem Title</h2>
-                    <Input placeholder='Insert the problem title' type="email"
-                        onChange={(e) => handleInputChange('title', e.target.value)}
-                    />
-                </div>
+                    <div>
+                        <h2 className='text-xl my-3 font-medium'>Problem Title</h2>
+                        <Input placeholder='Insert the problem title' type="email"
+                            onChange={(e) => handleInputChange('title', e.target.value)}
+                        />
+                    </div>
 
-                <div>
-                    <h2 className='text-xl my-3 font-medium'>Problem Category</h2>
-                    <Select
-                        value={formData.category}
-                        onValueChange={(value) => handleInputChange('category', value)}
-                    >
-                        <SelectTrigger className="w-[250px]">
-                            <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectLabel>Categories</SelectLabel>
-                                <SelectItem value="🛣️ Road & Traffic">Road & Traffic</SelectItem>
-                                <SelectItem value="🚌 Public Transportation">Public Transportation</SelectItem>
-                                <SelectItem value="🗑️ Waste & Cleanliness">Waste & Cleanliness</SelectItem>
-                                <SelectItem value="💧 Water & Sewage">Water & Sewage</SelectItem>
-                                <SelectItem value="🌳 Parks & Public Spaces">Parks & Public Spaces</SelectItem>
-                                <SelectItem value="💡 Streetlights & Electrical">Streetlights & Electrical</SelectItem>
-                                <SelectItem value="⚠️ Public Safety & Security">Public Safety & Security</SelectItem>
-                                <SelectItem value="🔊 Noise & Nuisance">Noise & Nuisance</SelectItem>
-                                <SelectItem value="🚧 Construction & Infrastructure">Construction & Infrastructure</SelectItem>
-                                <SelectItem value="🏠 Private Property & Bylaw Violations">Private Property & Bylaw Violations</SelectItem>
-                                <SelectItem value="🐾 Wildlife & Animal Control">Wildlife & Animal Control</SelectItem>
-                                <SelectItem value="♿ Accessibility Issues">Accessibility Issues</SelectItem>
-                                <SelectItem value="❓ Other">Other</SelectItem>
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                </div>
+                    <div>
+                        <h2 className='text-xl my-3 font-medium'>Problem Category</h2>
+                        <Select
+                            value={formData.category}
+                            onValueChange={(value) => handleInputChange('category', value)}
+                        >
+                            <SelectTrigger className="w-[250px]">
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Categories</SelectLabel>
+                                    <SelectItem value="🛣️ Road & Traffic">Road & Traffic</SelectItem>
+                                    <SelectItem value="🚌 Public Transportation">Public Transportation</SelectItem>
+                                    <SelectItem value="🗑️ Waste & Cleanliness">Waste & Cleanliness</SelectItem>
+                                    <SelectItem value="💧 Water & Sewage">Water & Sewage</SelectItem>
+                                    <SelectItem value="🌳 Parks & Public Spaces">Parks & Public Spaces</SelectItem>
+                                    <SelectItem value="💡 Streetlights & Electrical">Streetlights & Electrical</SelectItem>
+                                    <SelectItem value="⚠️ Public Safety & Security">Public Safety & Security</SelectItem>
+                                    <SelectItem value="🔊 Noise & Nuisance">Noise & Nuisance</SelectItem>
+                                    <SelectItem value="🚧 Construction & Infrastructure">Construction & Infrastructure</SelectItem>
+                                    <SelectItem value="🏠 Private Property & Bylaw Violations">Private Property & Bylaw Violations</SelectItem>
+                                    <SelectItem value="🐾 Wildlife & Animal Control">Wildlife & Animal Control</SelectItem>
+                                    <SelectItem value="♿ Accessibility Issues">Accessibility Issues</SelectItem>
+                                    <SelectItem value="❓ Other">Other</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                <div>
-                    <h2 className='text-xl my-3 font-medium'>Problem Description</h2>
-                    <Textarea placeholder="Insert a description of the problem"
-                        onChange={(e) => handleInputChange('description', e.target.value)}
-                    />
-                </div>
+                    <div>
+                        <h2 className='text-xl my-3 font-medium'>Problem Description</h2>
+                        <Textarea placeholder="Insert a description of the problem"
+                            onChange={(e) => handleInputChange('description', e.target.value)}
+                        />
+                    </div>
 
-                <div>
-                    <h2 className='text-xl my-3 font-medium'>Location of the Problem</h2>
-                    <GooglePlacesAutocomplete
-                        apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-                        selectProps={{
-                            place,
-                            onChange: (v) => { setPlace(v); handleInputChange('location', v) }
-                        }}
-                    />
-                </div>
+                    <div>
+                        <h2 className='text-xl my-3 font-medium'>Location of the Problem</h2>
+                        <GooglePlacesAutocomplete
+                            apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+                            selectProps={{
+                                place,
+                                onChange: (v) => { setPlace(v); handleInputChange('location', v) }
+                            }}
+                        />
+                    </div>
 
-{/*                 <div className="grid w-full max-w-sm items-center gap-0.5">
+                    {/*                 <div className="grid w-full max-w-sm items-center gap-0.5">
                     <h2 className='text-xl my-3 font-medium'>Please Upload an Image of the Problem</h2>
                     <Input
                         id="picture"
@@ -270,51 +275,54 @@ function CreateReport() {
                     )}
                 </div> */}
 
-                <div className='flex items-center space-x-2 mt-5'>
-                    <Checkbox id='notifications'
-                        checked={formData.notifications || false}
-                        onCheckedChange={(checked) => handleInputChange('notifications', checked)}
-                    />
-                    <label
-                        htmlFor='notifications'
-                        className='text-md font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                    >
-                        I want to receive notifications about the status of this problem
-                    </label>
+                    <div className='flex items-center space-x-2 mt-5'>
+                        <Checkbox id='notifications'
+                            checked={formData.notifications || false}
+                            onCheckedChange={(checked) => handleInputChange('notifications', checked)}
+                        />
+                        <label
+                            htmlFor='notifications'
+                            className='text-md font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
+                        >
+                            I want to receive notifications about the status of this problem
+                        </label>
+                    </div>
+
                 </div>
 
-            </div>
-
-            <div className='my-10 text-lg justify-center flex'>
-                <Button
-                    disabled={loading}
-                    onClick={OnGenerateReport}>
-                    {loading ?
-                        <AiOutlineLoading3Quarters className='h-7 w-7 animate-spin' /> : 'Submit Report'
-                    }
+                <div className='my-10 text-lg justify-center flex'>
+                    <Button
+                        disabled={loading}
+                        onClick={OnGenerateReport}>
+                        {loading ?
+                            <AiOutlineLoading3Quarters className='h-7 w-7 animate-spin' /> : 'Submit Report'
+                        }
                     </Button>
+                </div>
+
+                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogDescription>
+                                <img src="/logo.svg" />
+                                <h2 className='font-bold text-lg mt-7'>Sign In With Google</h2>
+                                <p>Securely sign in to Cypress with Google authentication</p>
+                                <Button
+                                    onClick={login}
+                                    className='w-full mt-5 flex gap-4 items-center'>
+                                    <FcGoogle className='h-7 w-7' />
+                                    Sign in with Google
+                                </Button>
+                            </DialogDescription>
+                        </DialogHeader>
+                    </DialogContent>
+                </Dialog>
             </div>
 
-            <Dialog open={openDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogDescription>
-                            <img src="/logo.svg" />
-                            <h2 className='font-bold text-lg mt-7'>Sign In With Google</h2>
-                            <p>Securely sign in to Cypress with Google authentication</p>
-
-                            <Button
-                                onClick={login}
-                                className='w-full mt-5 flex gap-4 items-center'>
-                                <FcGoogle className='h-7 w-7' />
-                                Sign in with Google
-                            </Button>
-                        </DialogDescription>
-                    </DialogHeader>
-                </DialogContent>
-            </Dialog>
-
-
+            {/* Footer */}
+            <div className="w-full text-center text-gray-500 border-t pt-6 pb-6 mx-0">
+                <p>Created by Group 42 • Cypress</p>
+            </div>
         </div>
     )
 }

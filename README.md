@@ -73,23 +73,8 @@ git merge main  # Merge the latest changes from main
    npx cypress run
    ```
 
-## Deployment
-### Preview Deployment
-Before deploying to production, test changes using a preview channel:
-```bash
-firebase hosting:channel:deploy CHANNEL_ID
-```
-Replace `CHANNEL_ID` with a unique identifier (e.g., `test-deploy`).
-
-### Production Deployment
-After successful testing:
-```bash
-firebase deploy
-```
-
 ## Notes
 - **Do not push directly to `main`**; always work on a separate branch and create a pull request.
-- Ensure your **Firebase project configuration** is set up correctly in the `.env` file.
 - Follow best practices for code quality and testing before submitting pull requests.
 
 ---

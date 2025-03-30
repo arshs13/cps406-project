@@ -1,12 +1,96 @@
-# React + Vite
+# Cypress Project
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+This repository is for the development and testing of the **CPS406 Project** using Cypress for end-to-end testing. The project is implemented with **Vite, React, Tailwind CSS, and Firebase**.
 
-Currently, two official plugins are available:
+## Installation
+To set up the project on your local machine, follow these steps:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   ```
+2. **Navigate to the project folder**
+   ```bash
+   cd cps406-project
+   ```
+3. **Install dependencies** (Use the legacy or force flag due to an outdated Google Autocomplete API for React v19)
+   ```bash
+   npm i --legacy-peer-deps OR npm i --force
+   ```
 
-## Expanding the ESLint configuration
+## Development
+To start the development server:
+```bash
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Branching and Collaboration Guidelines
+To maintain a clean workflow:
+1. **Create a new branch for changes**
+   ```bash
+   git checkout -b feature-branch
+   ```
+   (Replace `feature-branch` with a meaningful name, e.g., `add-auth`, `fix-navbar`.)
+
+2. **Make changes and test locally**
+   - Modify code as needed.
+   - Run the application with `npm run dev`.
+
+3. **Commit changes**
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   ```
+
+4. **Push the branch to GitHub**
+   ```bash
+   git push origin feature-branch
+   ```
+
+5. **Create a Pull Request**
+   - Navigate to the repository on GitHub.
+   - Click **Pull Requests** > **New Pull Request**.
+   - Set `feature-branch` as the source and `main` as the target.
+   - Click **Create Pull Request** and request a review.
+
+## Keeping Your Branch Updated
+To pull the latest changes from `main` before starting new work:
+```bash
+git checkout main
+git pull origin main
+git checkout feature-branch
+git merge main  # Merge the latest changes from main
+```
+
+## Testing with Cypress
+1. **Run Cypress tests in interactive mode:**
+   ```bash
+   npx cypress open
+   ```
+2. **Run Cypress tests in headless mode:**
+   ```bash
+   npx cypress run
+   ```
+
+## Deployment
+### Preview Deployment
+Before deploying to production, test changes using a preview channel:
+```bash
+firebase hosting:channel:deploy CHANNEL_ID
+```
+Replace `CHANNEL_ID` with a unique identifier (e.g., `test-deploy`).
+
+### Production Deployment
+After successful testing:
+```bash
+firebase deploy
+```
+
+## Notes
+- **Do not push directly to `main`**; always work on a separate branch and create a pull request.
+- Ensure your **Firebase project configuration** is set up correctly in the `.env` file.
+- Follow best practices for code quality and testing before submitting pull requests.
+
+---
+This README provides guidelines for setting up, developing, and deploying the project efficiently. 🚀

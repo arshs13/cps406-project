@@ -1,13 +1,15 @@
 import { db } from '@/service/firebaseConfig';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigation } from 'react-router-dom';
 import UserReportCardItem from './components/UserReportCardItem';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function MyReports() {
 
     const navigation = useNavigation();
     const [userReports, setUserReports] = useState([]);
+    const [sortBy, setSortBy] = useState('dateDesc');
 
     useEffect(() => {
         GetUserReports();
@@ -34,22 +36,53 @@ function MyReports() {
         });
     }
 
+    const sortedReports = useMemo(() => {
+        return [...userReports].sort((a,b) => {
+            const dateA = new Date(a.createdAt?.seconds * 1000);
+            const dateB = new Date(b.createdAt?.seconds * 1000);
+
+            switch(sortBy) {
+                case 'dateDesc':
+                    return dateB - dateA;
+                case 'dateAsc':
+                    return dateA - dateB;
+                case 'titleAsc':
+                    return a.title.localeCompare(b.title);
+                case 'titleDesc':
+                    return b.title.localeCompare(a.title);
+                default:
+                    return 0;
+            }
+        });
+    }, [userReports, sortBy]);
+
     return (
         <div className='min-h-screen flex flex-col'>
             <div className='flex-1 px-10 pt-10'>
-                <h2 className='font-bold text-3xl'>My Reports</h2>
+                <div className='flex justify-between items-center'>
+                    <h2 className='font-bold text-3xl'>My Reports</h2>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className='w-[180px]'>
+                            <SelectValue placeholder='Sort by' />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value='dateDesc'>Newest First</SelectItem>
+                            <SelectItem value='dateAsc'>Oldest First</SelectItem>
+                            <SelectItem value='titleAsc'>Title A-Z</SelectItem>
+                            <SelectItem value='titleDesc'>Title Z-A</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
                 <p className='mt-3 text-gray-500 text-xl'>Click each problem for more information</p>
 
                 <div className='grid grid-cols-2 mt-10 md:grid-cols-3 gap-5'>
-                    {userReports?.length > 0 ? userReports.map((report, index) => (
-                        <UserReportCardItem report={report} key={index} />
-                    ))
-                        : [1, 2, 3, 4, 5, 6].map((item, index) => (
-                            <div key={index} className='h-[132px] w-full bg-slate-200 animate-pulse rounded-lg'>
-
-                            </div>
+                    {sortedReports?.length > 0 ? sortedReports.map((report, index) => (
+                        <UserReportCardItem report={report} key={report.reportId || index} />
+                    )) : ( 
+                        [1, 2, 3, 4, 5, 6].map((item, index) => (
+                            <div key={index} className='h-[132px] w-full bg-slate-200 animate-pulse rounded-lg' />
                         ))
-                    }
+                    )}
                 </div>
             </div>
             {/* Full-width footer */}

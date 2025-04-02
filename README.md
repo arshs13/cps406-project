@@ -19,7 +19,7 @@ To set up the project on your local machine, follow these steps:
    npm i --legacy-peer-deps OR npm i --force
    ```
 
-**NOTE:
+***NOTE***:
 - For some reason the .env.local file did not get pushed to the github, so add this file with the API keys in your local repo to get the site working. The file is in the Discord.
 
 ## Development

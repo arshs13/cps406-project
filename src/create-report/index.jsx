@@ -23,9 +23,58 @@ import { db } from '@/service/firebaseConfig';
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useNavigate } from 'react-router-dom';
 
+// Google Maps API Necessities
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 function CreateReport() {
     const [place, setPlace] = useState();
+
+    const [accidentMarker, setAccidentMarker] = useState(null);
+
+    // Define the map container style
+    const mapContainerStyle = {
+        width: '100%',
+        height: '400px'
+    };
+
+    // Default center coordinates (e.g., New York City)
+    const defaultCenter = {
+        lat: 43.651070,
+        lng: -79.347015
+    };
+
+    // Determine map center based on the selected place
+    const [mapCenter, setMapCenter] = useState(defaultCenter);
+    
+    // Update mapCenter only when a new place is selected.
+    useEffect(() => {
+        if (place && place.value && place.value.geometry) {
+        setMapCenter({
+            lat: parseFloat(place.value.geometry.location.lat),
+            lng: parseFloat(place.value.geometry.location.lng)
+        });
+        }
+    }, [place]);
+
+    //Address -> Long, lat (vice versa)
+    const geocodeLatLng = async (lat, lng) => {
+        const geocoder = new window.google.maps.Geocoder();
+        const latlng = { lat, lng };
+        return new Promise((resolve, reject) => {
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === 'OK') {
+              if (results[0]) {
+                resolve(results[0].formatted_address);
+              } else {
+                resolve('Unknown location');
+              }
+            } else {
+              reject('Geocoder failed due to: ' + status);
+            }
+          });
+        });
+      };     
+     
 
     const [formData, setFormData] = useState([]);
 
@@ -78,6 +127,7 @@ function CreateReport() {
 
         const requiredFields = ['title', 'category', 'description'];
         const missingFields = requiredFields.filter(field => !formData[field]);
+              
 
         if (missingFields.length > 0) {
             toast(`Please fill in all required fields: ${missingFields.join(', ')}`);
@@ -114,7 +164,9 @@ function CreateReport() {
                 description: formData.description,
                 location: {
                     label: formData.location?.label || '',
-                    placeId: formData.location?.value?.place_id || ''
+                    placeId: formData.location?.value?.place_id || '',
+                    lat: accidentMarker ? accidentMarker.lat : null,
+                    lng: accidentMarker ? accidentMarker.lng : null,
                 },
                 notifications: formData.notifications || false,
                 userName: user?.name,
@@ -231,6 +283,7 @@ function CreateReport() {
                         />
                     </div>
 
+                    {/* <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}>
                     <div>
                         <h2 className='text-xl my-3 font-medium'>Location of the Problem</h2>
                         <GooglePlacesAutocomplete
@@ -240,7 +293,82 @@ function CreateReport() {
                                 onChange: (v) => { setPlace(v); handleInputChange('location', v) }
                             }}
                         />
+                    </div> */}
+
+                    <LoadScript 
+                        googleMapsApiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+                        libraries={['places']}>
+                    <div>
+                        {/* Location of the Problem - Autocomplete */}
+                        <div>
+                        <h2 className='text-xl my-3 font-medium'>Location of the Problem</h2>
+                        <GooglePlacesAutocomplete
+                            apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+                            fetchDetails={true}
+                            selectProps={{
+                                value: place,
+                                onChange: (v) => { 
+                                setPlace(v); 
+                                handleInputChange('location', v);
+                                if (v?.value?.geometry) {
+                                    // Call the lat() and lng() methods to get numeric values.
+                                    const location = v.value.geometry.location;
+                                    const lat = typeof location.lat === "function" ? location.lat() : location.lat;
+                                    const lng = typeof location.lng === "function" ? location.lng() : location.lng;
+                                    setAccidentMarker({ lat, lng });
+                                    setMapCenter({ lat, lng });
+                                }
+                                }
+                            }}
+                        />
+                        </div>
+
+                        {/* Google Map Section */}
+                        <div className='w-full px-10 mb-10'>
+                        <GoogleMap
+                        mapContainerStyle={mapContainerStyle}
+                        center={mapCenter}
+                        zoom={12}
+                        onClick={async (e) => {
+                            const lat = e.latLng.lat();
+                            const lng = e.latLng.lng();
+                            let address = 'Selected Location';
+                            try {
+                              address = await geocodeLatLng(lat, lng);
+                            } catch (error) {
+                              console.error(error);
+                            }
+                            const customLocation = {
+                              label: address,
+                              value: {
+                                geometry: {
+                                  location: {
+                                    lat: lat.toString(),
+                                    lng: lng.toString()
+                                  }
+                                }
+                              }
+                            };
+                            setAccidentMarker({ lat, lng });
+                            setPlace(customLocation);
+                            handleInputChange('location', customLocation);
+                          }}
+                          
+                        >
+                        {place && place.value && place.value.geometry && (
+                            <Marker 
+                            position={{
+                                lat: parseFloat(place.value.geometry.location.lat),
+                                lng: parseFloat(place.value.geometry.location.lng)
+                            }}
+                            />
+                        )}
+                        {accidentMarker && <Marker position={accidentMarker} />}
+                        </GoogleMap>
+                        </div>
                     </div>
+                    </LoadScript>
+                    
 
                     {/*                 <div className="grid w-full max-w-sm items-center gap-0.5">
                     <h2 className='text-xl my-3 font-medium'>Please Upload an Image of the Problem</h2>

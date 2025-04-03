@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { toast } from 'sonner';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 function ViewReport() {
 
@@ -100,11 +101,33 @@ function ViewReport() {
                             <p className="text-gray-700">
                                 {report?.location?.label || 'No location specified'}
                             </p>
-                            <div className="mt-4 h-48 bg-gray-100 rounded-lg">
-                                {/* Map placeholder */}
+                            <div className="mt-4 h-64 bg-gray-100 rounded-lg">
+                                {report?.location?.lat && report?.location?.lng ? (
+                                <LoadScript
+                                    googleMapsApiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+                                    libraries={['places']}
+                                >
+                                    <GoogleMap
+                                    mapContainerStyle={{ width: '100%', height: '100%' }}
+                                    center={{
+                                        lat: parseFloat(report.location.lat),
+                                        lng: parseFloat(report.location.lng)
+                                    }}
+                                    zoom={12}
+                                    >
+                                    <Marker 
+                                        position={{
+                                        lat: parseFloat(report.location.lat),
+                                        lng: parseFloat(report.location.lng)
+                                        }}
+                                    />
+                                    </GoogleMap>
+                                </LoadScript>
+                                ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                    Map preview
+                                    No map data available
                                 </div>
+                                )}
                             </div>
                         </div>
 

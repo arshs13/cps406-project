@@ -19,6 +19,9 @@ To set up the project on your local machine, follow these steps:
    npm i --legacy-peer-deps OR npm i --force
    ```
 
+***NOTE***:
+- For some reason the .env.local file did not get pushed to the github, so add this file with the API keys in your local repo to get the site working. The file is in the Discord.
+
 ## Development
 To start the development server:
 ```bash
@@ -73,23 +76,8 @@ git merge main  # Merge the latest changes from main
    npx cypress run
    ```
 
-## Deployment
-### Preview Deployment
-Before deploying to production, test changes using a preview channel:
-```bash
-firebase hosting:channel:deploy CHANNEL_ID
-```
-Replace `CHANNEL_ID` with a unique identifier (e.g., `test-deploy`).
-
-### Production Deployment
-After successful testing:
-```bash
-firebase deploy
-```
-
 ## Notes
 - **Do not push directly to `main`**; always work on a separate branch and create a pull request.
-- Ensure your **Firebase project configuration** is set up correctly in the `.env` file.
 - Follow best practices for code quality and testing before submitting pull requests.
 
 ---

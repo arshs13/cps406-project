@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Button } from '../ui/button';
 import {
   Popover,
@@ -18,14 +18,16 @@ import {
 import axios from 'axios';
 import { FcGoogle } from "react-icons/fc";
 import { toast } from 'sonner';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '@/service/firebaseConfig';
 
 function Header() {
-
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem('user');
     return storedUser ? JSON.parse(storedUser) : null;
   });
   const [openDialog, setOpenDialog] = useState(false);
+  const statusMapRef = useRef({});
 
   useEffect(() => {
     const handleUserUpdate = () => {
@@ -41,6 +43,54 @@ function Header() {
       window.removeEventListener('storage', handleUserUpdate);
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'Reports'),
+      where('userEmail', '==', user.email),
+      where('notifications', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const docId = change.doc.id;
+        const report = change.doc.data();
+
+        if (change.type === 'modified') {
+          const prevStatus = statusMapRef.current[docId];
+          const newStatus = report.status;
+
+          if (prevStatus !== newStatus && ['Pending', 'In-Progress', 'Resolved', 'Rejected'].includes(newStatus)) {
+            toast(
+              <div className="flex flex-col">
+                <span className="font-semibold text-lg">Status Update</span>
+                <span className="mt-1 text-sm text-muted-foreground">
+                  Report "{report.title}" is now {newStatus}
+                </span>
+              </div>,
+              {
+                action: {
+                  label: 'View Report',
+                  onClick: () => (window.location.href = `/view-report/${docId}`)
+                },
+              });
+          }
+          statusMapRef.current[docId] = newStatus;
+        } else if (change.type === 'added') {
+          statusMapRef.current[docId] = report.status;
+        } else if (change.type === 'removed') {
+          delete statusMapRef.current[docId];
+        }
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      statusMapRef.current = {};
+    };
+  }, [user]);
 
   const login = useGoogleLogin({
     onSuccess: (codeResp) => GetUserProfile(codeResp),
@@ -77,7 +127,7 @@ function Header() {
         >
           <div className="w-[160px] md:w-[180px] h-auto aspect-[1750/398]"> {/* 4.44:1 ratio */}
             <img
-              src='/logo.svg'
+              src='/logo.png'
               className="w-full h-full object-contain"
               alt="Cypress Logo"
             />
@@ -130,6 +180,7 @@ function Header() {
           <Button
             onClick={() => setOpenDialog(true)}
             aria-label='Sign in'
+            className='cursor-pointer'
           >
             Sign In
           </Button>
@@ -139,12 +190,18 @@ function Header() {
         <DialogContent>
           <DialogHeader>
             <DialogDescription>
-              <img src="/logo.svg" />
+              <div className="w-[160px] md:w-[180px] h-auto aspect-[1750/398]"> {/* 4.44:1 ratio */}
+                <img
+                  src='/logo.png'
+                  className="w-full h-full object-contain"
+                  alt="Cypress Logo"
+                />
+              </div>
               <h2 className='font-bold text-lg mt-7'>Sign In With Google</h2>
               <p>Securely sign in to Cypress with Google authentication</p>
               <Button
                 onClick={login}
-                className='w-full mt-5 flex gap-4 items-center'>
+                className='w-full mt-5 flex gap-4 items-center cursor-pointer'>
                 <FcGoogle className='h-7 w-7' />
                 Sign in with Google
               </Button>

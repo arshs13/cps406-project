@@ -20,12 +20,12 @@ const router = createBrowserRouter([
     element: <CreateReport />
   },
   {
-    path:'/view-report/:reportId',
-    element:<ViewReport/>
+    path: '/view-report/:reportId',
+    element: <ViewReport />
   },
   {
-    path:'/my-reports',
-    element:<MyReports/>
+    path: '/my-reports',
+    element: <MyReports />
   }
 ])
 

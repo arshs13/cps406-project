@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import GooglePlacesAutocomplete from 'react-google-places-autocomplete'
 import { toast } from 'sonner';
 import {
@@ -18,71 +18,30 @@ import {
 import { FcGoogle } from "react-icons/fc";
 import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from '@/service/firebaseConfig';
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useNavigate } from 'react-router-dom';
 
 // Google Maps API Necessities
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { Autocomplete, GoogleMap, LoadScript, Marker, useJsApiLoader } from '@react-google-maps/api';
 
 function CreateReport() {
-    const [place, setPlace] = useState();
-
-    const [accidentMarker, setAccidentMarker] = useState(null);
-
-    // Define the map container style
-    const mapContainerStyle = {
-        width: '100%',
-        height: '400px'
-    };
-
-    // Default center coordinates (e.g., New York City)
-    const defaultCenter = {
-        lat: 43.651070,
-        lng: -79.347015
-    };
-
-    // Determine map center based on the selected place
-    const [mapCenter, setMapCenter] = useState(defaultCenter);
-    
-    // Update mapCenter only when a new place is selected.
-    useEffect(() => {
-        if (place && place.value && place.value.geometry) {
-        setMapCenter({
-            lat: parseFloat(place.value.geometry.location.lat),
-            lng: parseFloat(place.value.geometry.location.lng)
-        });
-        }
-    }, [place]);
-
-    //Address -> Long, lat (vice versa)
-    const geocodeLatLng = async (lat, lng) => {
-        const geocoder = new window.google.maps.Geocoder();
-        const latlng = { lat, lng };
-        return new Promise((resolve, reject) => {
-          geocoder.geocode({ location: latlng }, (results, status) => {
-            if (status === 'OK') {
-              if (results[0]) {
-                resolve(results[0].formatted_address);
-              } else {
-                resolve('Unknown location');
-              }
-            } else {
-              reject('Geocoder failed due to: ' + status);
-            }
-          });
-        });
-      };     
-     
-
+    const navigate = useNavigate();
     const [formData, setFormData] = useState([]);
-
     const [openDialog, setOpenDialog] = useState(false);
-
     const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate();
+    // --- Google Maps state & refs ---
+    const { isLoaded, loadError } = useJsApiLoader({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_PLACE_API_KEY,
+        libraries: ['places'],
+    });
+    const defaultCenter = { lat: 43.651070, lng: -79.347015 };
+    const [mapCenter, setMapCenter] = useState(defaultCenter);
+    const [marker, setMarker] = useState(null);
+    const autoRef = useRef(null);
+    const inputRef = useRef(null);
 
     const handleInputChange = (name, value) => {
         setFormData({
@@ -91,54 +50,127 @@ function CreateReport() {
         })
     }
 
-    useEffect(() => {
-        console.log(formData);
-    }, [formData]);
+    // Handle place selection from autocomplete
+    const onLoadAutocomplete = (autocomplete) => {
+        autoRef.current = autocomplete;
+    };
 
-    /*     useEffect(() => {
-            return () => {
-                if (formData.image?.preview) {
-                    URL.revokeObjectURL(formData.image.preview);
+    const onPlaceChanged = () => {
+        const place = autoRef.current.getPlace();
+        if (!place.geometry) return;
+
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const label = place.formatted_address || place.name;
+
+        setMarker({ lat, lng });
+        setMapCenter({ lat, lng });
+
+        if (inputRef.current) inputRef.current.value = label;
+
+        handleInputChange('location', {
+            label,
+            placeId: place.place_id,
+            lat: lat.toString(),
+            lng: lng.toString(),
+        });
+    };
+
+    // Reverse geocode click
+    const geocodeLatLng = (lat, lng) => {
+        const geocoder = new window.google.maps.Geocoder();
+        return new Promise((resolve, reject) => {
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    resolve(results[0].formatted_address);
+                } else {
+                    reject('Geocode failed: ' + status);
                 }
-            };
-        }, [formData.image]); */
+            });
+        });
+    };
 
+    // Handle map click
+    const onMapClick = async (e) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        let address = 'Unknown location'
+        try {
+            address = await geocodeLatLng(lat, lng);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to get address');
+        }
+
+        setMarker({ lat, lng });
+        setMapCenter({ lat, lng });
+
+        if (inputRef.current) inputRef.current.value = address;
+
+        handleInputChange('location', {
+            label: address,
+            lat: lat.toString(),
+            lng: lng.toString(),
+        });
+    }
+
+    // --- Duplicate detection helper functions ---
+    // Haversine formula to calculate distance in meters between two coordinates
+    function getDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371000; // Earth's radius in meters
+        const toRad = (x) => (x * Math.PI) / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // Check for duplicate reports within a given threshold (default 100 meters)
+    const checkForDuplicate = async (newLocation, category, threshold = 100) => {
+        const reportsSnapshot = await getDocs(collection(db, "Reports"));
+        const duplicates = [];
+        reportsSnapshot.forEach(doc => {
+            const report = doc.data();
+            if (report.location && report.location.lat && report.location.lng && report.category === category) {
+                const distance = getDistance(
+                    parseFloat(newLocation.lat),
+                    parseFloat(newLocation.lng),
+                    parseFloat(report.location.lat),
+                    parseFloat(report.location.lng)
+                );
+                if (distance < threshold) {
+                    duplicates.push(report);
+                }
+            }
+        });
+        return duplicates;
+    };
+
+    // --- Auth & Save logic ---
     const login = useGoogleLogin({
         onSuccess: (codeResp) => GetUserProfile(codeResp),
         onError: (error) => console.log(error)
     })
 
     const OnGenerateReport = () => {
-
         const user = localStorage.getItem('user');
-
         if (!user) {
             setOpenDialog(true);
             return;
         }
-
-        /* if (formData.image?.file) {
-            const error = validateImageFile(formData.image.file);
-            if (error) {
-                toast(error);
-                return;
-            }
-        } */
-
         const requiredFields = ['title', 'category', 'description'];
         const missingFields = requiredFields.filter(field => !formData[field]);
-              
-
         if (missingFields.length > 0) {
             toast(`Please fill in all required fields: ${missingFields.join(', ')}`);
             return;
         }
-
         if (!formData.location) {
             toast('Please select a valid location');
             return;
         }
-
         console.log(formData);
         SaveReport();
     }
@@ -146,17 +178,16 @@ function CreateReport() {
     const SaveReport = async () => {
         setLoading(true);
         try {
+            // Duplicate check before saving
+            if (formData.location && formData.location.lat && formData.location.lng && formData.category) {
+                const duplicates = await checkForDuplicate(formData.location, formData.category, 100); // 100 meter radius
+                if (duplicates.length > 0) {
+                    formData.isDuplicate = true;
+                }
+            }
+
             const user = JSON.parse(localStorage.getItem('user'));
-
             const docId = Date.now().toString();
-
-            /* let imageUrl = null;
-            if (formData.image?.file) {
-                const storageRef = ref(storage, `reports/${user.id}/${formData.image.file.name}`);
-                const snapshot = await uploadBytes(storageRef, formData.image.file);
-                imageUrl = await getDownloadURL(snapshot.ref);
-            } */
-
             const reportData = {
                 reportId: docId,
                 title: formData.title,
@@ -164,31 +195,34 @@ function CreateReport() {
                 description: formData.description,
                 location: {
                     label: formData.location?.label || '',
-                    placeId: formData.location?.value?.place_id || '',
-                    lat: accidentMarker ? accidentMarker.lat : null,
-                    lng: accidentMarker ? accidentMarker.lng : null,
+                    placeId: formData.location?.place_id || '', // adjust as needed
+                    lat: formData.location?.lat || null,
+                    lng: formData.location?.lng || null,
                 },
                 notifications: formData.notifications || false,
                 userName: user?.name,
                 userEmail: user?.email,
                 userId: user?.id,
                 createdAt: new Date(),
-                status: 'In-Progress'
+                status: 'Pending',
+                isDuplicate: formData.isDuplicate || false,
             };
-
             await setDoc(doc(db, "Reports", docId), reportData);
 
-            toast.success("Report submitted successfully!");
+            if (reportData.isDuplicate) {
+                toast('Potentially duplicate report submitted!');
+            } else {
+                toast.success("Report submitted successfully!");
+            }
+
             console.log("Report ID:", docId);
             setLoading(false);
             navigate('/view-report/' + docId);
-
         } catch (error) {
             console.error("Error saving report:", error);
             toast.error("Failed to submit report. Please try again.");
         } finally {
             setLoading(false);
-
         }
     };
 
@@ -196,8 +230,8 @@ function CreateReport() {
         axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenInfo?.access_token}`, {
             headers: {
                 Authorization: `Bearer ${tokenInfo?.access_token}`,
-                Accept: 'Application/json'
-            }
+                Accept: 'Application/json',
+            },
         }).then((resp) => {
             localStorage.setItem('user', JSON.stringify(resp.data));
             window.dispatchEvent(new Event('user-updated'));
@@ -210,26 +244,24 @@ function CreateReport() {
             });
     };
 
-    /* const validateImageFile = (file) => {
-        if (!file) return null;
+    const [place, setPlace] = useState();
 
-        const MAX_SIZE = 5 * 1024 * 1024;
-        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
-        if (!file.type.startsWith('image/')) {
-            return 'Please select an image file';
+    // Update mapCenter only when a new place is selected.
+    useEffect(() => {
+        if (place && place.value && place.value.geometry) {
+            setMapCenter({
+                lat: parseFloat(place.value.geometry.location.lat),
+                lng: parseFloat(place.value.geometry.location.lng)
+            });
         }
+    }, [place]);
 
-        if (!ALLOWED_TYPES.includes(file.type)) {
-            return 'Please upload a valid image file (JPEG, PNG, or WEBP)';
-        }
+    useEffect(() => {
+        console.log(formData);
+    }, [formData]);
 
-        if (file.size > MAX_SIZE) {
-            return `File size must be less than ${MAX_SIZE / 1024 / 1024}MB`;
-        }
-
-        return null;
-    }; */
+    if (loadError) return <div>Map failed to load</div>;
+    if (!isLoaded) return <div>Loading map…</div>;
 
     return (
         <div className='min-h-screen flex flex-col pt-10'>
@@ -283,127 +315,32 @@ function CreateReport() {
                         />
                     </div>
 
-                    {/* <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}>
                     <div>
-                        <h2 className='text-xl my-3 font-medium'>Location of the Problem</h2>
-                        <GooglePlacesAutocomplete
-                            apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-                            selectProps={{
-                                place,
-                                onChange: (v) => { setPlace(v); handleInputChange('location', v) }
-                            }}
-                        />
-                    </div> */}
-
-                    <LoadScript 
-                        googleMapsApiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-                        libraries={['places']}>
-                    <div>
-                        {/* Location of the Problem - Autocomplete */}
-                        <div>
-                        <h2 className='text-xl my-3 font-medium'>Location of the Problem</h2>
-                        <GooglePlacesAutocomplete
-                            apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-                            fetchDetails={true}
-                            selectProps={{
-                                value: place,
-                                onChange: (v) => { 
-                                setPlace(v); 
-                                handleInputChange('location', v);
-                                if (v?.value?.geometry) {
-                                    // Call the lat() and lng() methods to get numeric values.
-                                    const location = v.value.geometry.location;
-                                    const lat = typeof location.lat === "function" ? location.lat() : location.lat;
-                                    const lng = typeof location.lng === "function" ? location.lng() : location.lng;
-                                    setAccidentMarker({ lat, lng });
-                                    setMapCenter({ lat, lng });
-                                }
-                                }
-                            }}
-                        />
-                        </div>
-
-                        {/* Google Map Section */}
-                        <div className='w-full px-10 mb-10'>
-                        <GoogleMap
-                        mapContainerStyle={mapContainerStyle}
-                        center={mapCenter}
-                        zoom={12}
-                        onClick={async (e) => {
-                            const lat = e.latLng.lat();
-                            const lng = e.latLng.lng();
-                            let address = 'Selected Location';
-                            try {
-                              address = await geocodeLatLng(lat, lng);
-                            } catch (error) {
-                              console.error(error);
-                            }
-                            const customLocation = {
-                              label: address,
-                              value: {
-                                geometry: {
-                                  location: {
-                                    lat: lat.toString(),
-                                    lng: lng.toString()
-                                  }
-                                }
-                              }
-                            };
-                            setAccidentMarker({ lat, lng });
-                            setPlace(customLocation);
-                            handleInputChange('location', customLocation);
-                          }}
-                          
+                        <h2 className="text-xl my-3 font-medium">Location of the Problem</h2>
+                        <Autocomplete
+                            onLoad={onLoadAutocomplete}
+                            onPlaceChanged={onPlaceChanged}
                         >
-                        {place && place.value && place.value.geometry && (
-                            <Marker 
-                            position={{
-                                lat: parseFloat(place.value.geometry.location.lat),
-                                lng: parseFloat(place.value.geometry.location.lng)
-                            }}
-                            />
-                        )}
-                        {accidentMarker && <Marker position={accidentMarker} />}
-                        </GoogleMap>
-                        </div>
+                            <Input ref={inputRef} placeholder="Search for address…" />
+                        </Autocomplete>
                     </div>
-                    </LoadScript>
-                    
 
-                    {/*                 <div className="grid w-full max-w-sm items-center gap-0.5">
-                    <h2 className='text-xl my-3 font-medium'>Please Upload an Image of the Problem</h2>
-                    <Input
-                        id="picture"
-                        type="file"
-                        onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
+                    <div className="w-full h-[400px] mb-10">
+                        <GoogleMap
+                            mapContainerStyle={{ width: '100%', height: '100%' }}
+                            center={mapCenter}
+                            zoom={12}
+                            onClick={onMapClick}
+                            options={{
+                                draggableCursor: 'pointer',
+                                draggingCursor: 'grabbing'
+                            }}
+                        >
+                            {marker && <Marker position={marker} />}
+                        </GoogleMap>
+                    </div>
 
-                            const error = validateImageFile(file);
-                            if (error) {
-                                toast(error);
-                                e.target.value = '';
-                                return;
-                            }
-
-                            handleInputChange('image', {
-                                file,
-                                preview: URL.createObjectURL(file)
-                            });
-                        }}
-                    />
-                    {formData.image?.preview && (
-                        <div className='mt-4'>
-                            <img
-                                src={formData.image.preview}
-                                alt='Problem preview'
-                                className='max-w-[300px] rounded-lg border'
-                            />
-                        </div>
-                    )}
-                </div> */}
-
-                    <div className='flex items-center space-x-2 mt-5'>
+                    <div className='flex items-center space-x-2 -mt-2'>
                         <Checkbox id='notifications'
                             checked={formData.notifications || false}
                             onCheckedChange={(checked) => handleInputChange('notifications', checked)}
@@ -418,8 +355,10 @@ function CreateReport() {
 
                 </div>
 
-                <div className='my-10 text-lg justify-center flex'>
+                <div className='my-13 text-lg justify-center flex'>
                     <Button
+                        size='lg'
+                        className="text-lg cursor-pointer"
                         disabled={loading}
                         onClick={OnGenerateReport}>
                         {loading ?
@@ -432,7 +371,13 @@ function CreateReport() {
                     <DialogContent>
                         <DialogHeader>
                             <DialogDescription>
-                                <img src="/logo.svg" />
+                                <div className="w-[160px] md:w-[180px] h-auto aspect-[1750/398]"> {/* 4.44:1 ratio */}
+                                    <img
+                                        src='/logo.png'
+                                        className="w-full h-full object-contain"
+                                        alt="Cypress Logo"
+                                    />
+                                </div>
                                 <h2 className='font-bold text-lg mt-7'>Sign In With Google</h2>
                                 <p>Securely sign in to Cypress with Google authentication</p>
                                 <Button
@@ -449,7 +394,7 @@ function CreateReport() {
 
             {/* Footer */}
             <div className="w-full text-center text-gray-500 border-t pt-6 pb-6 mx-0">
-                <p>Created by Group 42 • Cypress</p>
+                <p>Created by Group 10 • Cypress</p>
             </div>
         </div>
     )

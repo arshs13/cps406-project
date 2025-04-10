@@ -15,7 +15,7 @@ function Hero() {
                     Cypress is your go-to tool for reporting and tracking local issues in Toronto. Submit a report, stay updated, and help improve your community!
                 </p>
                 <h3 className='font-medium text-[18px] text-center mt-3'>
-                    Click "Create a Report" to get started.
+                    Click "Create Report" to get started.
                 </h3>
 
                 <Link to={'/create-report'}>

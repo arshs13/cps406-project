@@ -37,11 +37,11 @@ function MyReports() {
     }
 
     const sortedReports = useMemo(() => {
-        return [...userReports].sort((a,b) => {
+        return [...userReports].sort((a, b) => {
             const dateA = new Date(a.createdAt?.seconds * 1000);
             const dateB = new Date(b.createdAt?.seconds * 1000);
 
-            switch(sortBy) {
+            switch (sortBy) {
                 case 'dateDesc':
                     return dateB - dateA;
                 case 'dateAsc':
@@ -78,7 +78,7 @@ function MyReports() {
                 <div className='grid grid-cols-2 mt-10 md:grid-cols-3 gap-5'>
                     {sortedReports?.length > 0 ? sortedReports.map((report, index) => (
                         <UserReportCardItem report={report} key={report.reportId || index} />
-                    )) : ( 
+                    )) : (
                         [1, 2, 3, 4, 5, 6].map((item, index) => (
                             <div key={index} className='h-[132px] w-full bg-slate-200 animate-pulse rounded-lg' />
                         ))
@@ -86,8 +86,8 @@ function MyReports() {
                 </div>
             </div>
             {/* Full-width footer */}
-            <div className="w-full text-center text-gray-500 border-t pt-6 pb-6 mt-13">
-                <p>Created by Group 42 • Cypress</p>
+            <div className="w-full text-center text-gray-500 border-t pt-6 pb-6 mt-14">
+                <p>Created by Group 10 • Cypress</p>
             </div>
         </div>
     )
